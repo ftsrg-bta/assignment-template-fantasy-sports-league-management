@@ -1,0 +1,132 @@
+[
+    {
+        "INVOKE": "ClearState"
+    },
+    // ============================ SETUP PHASE ============================
+    {
+        "INVOKE": "Initalize",
+        "args": [
+            {
+                "minBet": 10,
+                "maxBet": 100,
+                "teamSize": 3,
+                "initialPlayers": [
+                    { "name": "Player1", "id": "1" },
+                    { "name": "Player2", "id": "2" },
+                    { "name": "Player3", "id": "3" },
+                    { "name": "Player4", "id": "4" },
+                    { "name": "Player5", "id": "5" },
+                    { "name": "Player6", "id": "6" }
+                ],
+                "scoreMapping": {
+                    "goals": 10,
+                    "assists": 5,
+                    "passes": 1,
+                    "tackles": 3,
+                    "saves": 7,
+                    "minutesPlayed": 0.1
+                }
+            }
+        ]
+    },
+    {
+        "QUERY": "GetGameVariables"
+    },
+    {
+        "QUERY": "GetAllPlayers"
+    },
+
+    // ============================ DRAFT PHASE ============================
+    {
+        "INVOKE": "StartDraft",
+        "args": []
+    },
+    {
+        "INVOKE": "AddTeamAndBet",
+        "args": [
+            {
+                "name": "TeamA",
+                "players": [
+                    { "name": "Player1", "id": "1" },
+                    { "name": "Player2", "id": "2" },
+                    { "name": "Player3", "id": "3" }
+                ],
+                "bet": 50
+            }
+        ]
+    },
+    {
+        "INVOKE": "AddTeamAndBet",
+        "args": [
+            {
+                "name": "TeamB",
+                "players": [
+                    { "name": "Player4", "id": "4" },
+                    { "name": "Player5", "id": "5" },
+                    { "name": "Player6", "id": "6" }
+                ],
+                "bet": 70
+            }
+        ]
+    },
+    {
+        "QUERY": "GetAllTeams"
+    },
+
+    // ============================ PLAY PHASE ============================
+    {
+        "INVOKE": "StartSeason",
+        "args": []
+    },
+    {
+        "INVOKE": "AddMatchResult",
+        "args": [
+            {
+                "matchId": "match1",
+                "playerStats": [
+                    {
+                        "playerId": "1",
+                        "stats": { "goals": 0, "assists": 0, "passes": 5, "tackles": 1, "saves": 0, "minutesPlayed": 90 }
+                    },
+                    {
+                        "playerId": "2",
+                        "stats": { "goals": 0, "assists": 0, "passes": 10, "tackles": 2, "saves": 0, "minutesPlayed": 90 }
+                    },
+                    {
+                        "playerId": "3",
+                        "stats": { "goals": 0, "assists": 0, "passes": 8, "tackles": 1, "saves": 0, "minutesPlayed": 90 }
+                    },
+                    {
+                        "playerId": "4",
+                        "stats": { "goals": 3, "assists": 2, "passes": 15, "tackles": 4, "saves": 1, "minutesPlayed": 90 }
+                    },
+                    {
+                        "playerId": "5",
+                        "stats": { "goals": 2, "assists": 3, "passes": 20, "tackles": 5, "saves": 2, "minutesPlayed": 90 }
+                    },
+                    {
+                        "playerId": "6",
+                        "stats": { "goals": 1, "assists": 1, "passes": 12, "tackles": 3, "saves": 3, "minutesPlayed": 90 }
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "QUERY": "GetPointsForTeam",
+        "args": ["TeamA"]
+    },
+    {
+        "QUERY": "GetPointsForTeam",
+        "args": ["TeamB"]
+    },
+
+    // ============================ END PHASE ============================
+    {
+        "INVOKE": "EndSeason",
+        "args": []
+    },
+    {
+        "QUERY": "GetResults"
+    }
+]

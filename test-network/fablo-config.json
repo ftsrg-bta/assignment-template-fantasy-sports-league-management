@@ -54,7 +54,7 @@
   ],
   "chaincodes": [
     {
-      "name": "kv-node",
+      "name": "fantasy-sports-league-management",
       "version": "0.1.0",
       "lang": "node",
       "channel": "channel1",

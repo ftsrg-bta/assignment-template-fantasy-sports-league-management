@@ -1,0 +1,6 @@
+{
+    "recommendations": [
+        "spydra.hyperledger-fabric-debugger",
+        "ms-azuretools.vscode-docker"
+    ]
+}

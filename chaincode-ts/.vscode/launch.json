@@ -1,0 +1,17 @@
+{
+    "configurations": [  
+        {
+            "type": "hlf-node",
+            "request": "launch",
+            "name": "Debug Chaincode",
+            "isCaas": false,
+            "program": "${workspaceFolder}/src/index.ts",
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "NODE_ENV": "development"
+            },
+            "internalConsoleOptions": "openOnFirstSessionStart"
+            
+        }
+    ]
+}

@@ -1,4 +1,18 @@
-# Hyperledger Fabric assignment template
+# Hyperledger Fabric assignment: Fantasy Sports League Management
+
+> [!IMPORTANT]
+> Please choose the language of your implementation and indicate it in the alert block below.
+> Do not forget to rename the `chaincode-*/` directory to `chaincode/` and please remove the other `chaincode-*/` directories.
+>
+> Starter projects:
+>
+>  * TypeScript: [`chaincode-ts/`](chaincode-ts/)
+>  * Java: **TBD**
+>  * JavaScript: **TBD**
+>  * Go: **TBD**
+
+> [!NOTE]
+> Chosen implementation language: <!-- TODO -->
 
 ## Repository structure
 
