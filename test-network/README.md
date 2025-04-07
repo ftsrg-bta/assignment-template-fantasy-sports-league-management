@@ -13,13 +13,3 @@
 ```console
 $ ./fablo up
 ```
-
-By default, the `kv-node` chaincode is installed in `channel1`.
-
-
-## Configure the network
-
-Adjust `fablo-config.json` as desired.
-Especially, adjust the `chaincodes` value.
-
-All chaincodes can be found under the `chaincodes/` directory.
