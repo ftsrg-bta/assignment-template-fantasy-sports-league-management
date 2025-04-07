@@ -1,5 +1,10 @@
 # Hyperledger Fabric Dev Network with Fablo
 
+> [!IMPORTANT]
+> The test network will not work with the default configuration unless one of the `chaincode-*/` directories in the repository root become `chaincode/`.
+> See the [README](../README.md).
+
+
 ## Spin up the test network
 
 > [!TIP]
