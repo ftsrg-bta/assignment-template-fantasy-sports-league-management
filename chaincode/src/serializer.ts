@@ -2,7 +2,7 @@ export class FantasyLeagueSerializer {
     static serialize<I, O extends Buffer<ArrayBuffer>>(object: I): O {
         let result: string
         if (typeof object !== 'object') {
-            result = object.toString()
+            result = (object as { toString(): string }).toString()
         } else {
             result = JSON.stringify(object)
         }
@@ -10,9 +10,6 @@ export class FantasyLeagueSerializer {
     }
 
     static deserialize<I extends Uint8Array, O>(buffer: I): O {
-        let string = buffer.toString()
-        let result: any
-        // If buffer is Buffer or Uint8Array, convert it to a string:
         const rawString =
             typeof buffer === 'string' ? buffer : buffer.toString()
 

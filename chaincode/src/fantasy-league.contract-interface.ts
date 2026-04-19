@@ -1,17 +1,17 @@
-import { Context, Contract, Default, Info, Transaction } from 'fabric-contract-api'
-import { EndResultDto, MatchResult, Player, SetupDto, Team } from './data-model'
+import { Context } from 'fabric-contract-api'
+import { EndResultDto, MatchResult, Player, SetupDto, Team, VariablesDto } from './data-model.js'
 
 export interface IFantasyLeague {
     // ===== CLEAR =====
     ClearState(ctx: Context): Promise<void>;
 
     // ===== LIFECYCLE =====
-    Initalize(ctx: Context, dto: SetupDto): Promise<void>
+    Initialize(ctx: Context, dto: SetupDto): Promise<void>
     StartDraft(ctx: Context): Promise<void>
     StartSeason(ctx: Context): Promise<void>
     EndSeason(ctx: Context): Promise<void>
     // ===== VARIABLES =====
-    GetGameVariables(ctx: Context): Promise<any>;
+    GetGameVariables(ctx: Context): Promise<VariablesDto>;
 
     // ===== PLAYERS =====
     AddPlayer(ctx: Context, player: Player): Promise<void>
@@ -29,8 +29,8 @@ export interface IFantasyLeague {
     GetMatchResult(ctx: Context, matchId: string): Promise<MatchResult>;
     GetAllMatchResults(ctx: Context): Promise<MatchResult[]>;
     // ===== RESULTS=====
-    getPointsForTeam(ctx: Context, teamName: string): Promise<number>
-    getResults(ctx: Context): Promise<EndResultDto>
+    GetPointsForTeam(ctx: Context, teamName: string): Promise<number>
+    GetResults(ctx: Context): Promise<EndResultDto>
 
 
 }

@@ -2,7 +2,7 @@
 
 set -e
 
-FABLO_VERSION=2.2.0
+FABLO_VERSION=2.6.0
 FABLO_IMAGE_NAME="ghcr.io/fablo-io/fablo"
 FABLO_IMAGE="$FABLO_IMAGE_NAME:$FABLO_VERSION"
 
@@ -26,6 +26,75 @@ getDefaultFabloConfig() {
   else
     echo "$fablo_config_json"
   fi
+}
+
+snapshotFabloConfigToTarget() {
+  local fablo_config="$1"
+  local fablo_target="$2"
+
+  if [ -z "$fablo_config" ] || [ ! -f "$fablo_config" ]; then
+    return
+  fi
+
+  mkdir -p "$fablo_target"
+
+  local ext="${fablo_config##*.}"
+  local preserved_name="fablo-config.$ext"
+  cp -f "$fablo_config" "$fablo_target/$preserved_name"
+
+}
+
+getStoredConfigSnapshotPath() {
+  if [ -f "$FABLO_TARGET/fablo-config.json" ]; then
+    echo "$FABLO_TARGET/fablo-config.json"
+  elif [ -f "$FABLO_TARGET/fablo-config.yaml" ]; then
+    echo "$FABLO_TARGET/fablo-config.yaml"
+  elif [ -f "$FABLO_TARGET/fablo-config.yml" ]; then
+    echo "$FABLO_TARGET/fablo-config.yml"
+  else
+    echo ""
+  fi
+}
+
+verifyConfigMatchesOrFail() {
+  local current_config=${1:-$(getDefaultFabloConfig)}
+
+  if [ -z "$current_config" ] || [ ! -f "$current_config" ]; then
+    return
+  fi
+
+  local stored_config
+  stored_config="$(getStoredConfigSnapshotPath)"
+
+  if [ -z "$stored_config" ]; then
+    echo "No stored config snapshot found in '$FABLO_TARGET'. Storing current config snapshot for future comparisons."
+
+    local ext="${current_config##*.}"
+    if [ "$ext" = "json" ] || [ "$ext" = "yaml" ] || [ "$ext" = "yml" ] ; then
+      snapshotFabloConfigToTarget "$current_config" "$FABLO_TARGET"
+    else
+      echo "Error: Unsupported config file extension '.$ext'. Supported extensions are: .json, .yaml"
+      exit 1
+    fi
+    return
+  fi
+
+  if cmp -s "$stored_config" "$current_config"; then
+    return
+  fi
+
+  echo "Error: Fablo configuration has changed since the network at '$FABLO_TARGET' was generated."
+  echo "Stored config:  $stored_config"
+  echo "Current config: $current_config"
+  echo ""
+  echo "--- Diff (stored vs current) ---"
+  # Show unified diff
+  diff -u "$stored_config" "$current_config" || true
+  echo "--------------------------------"
+  echo ""
+  echo "Please run 'fablo prune' to remove the existing network before applying configuration changes,"
+  echo "or run 'fablo recreate [path/to/fablo-config]' to prune and start with the new configuration."
+  exit 1
 }
 
 getSnapshotPath() {
@@ -62,7 +131,7 @@ printSplash() {
 printHelp() {
   printSplash
   echo "Usage:
-  fablo init [node] [rest] [dev]
+  fablo init [node] [rest] [dev] [gateway]
     Creates simple Fablo config in current directory with optional Node.js, chaincode and REST API and dev mode.
 
   fablo generate [/path/to/fablo-config.json|yaml [/path/to/fablo/target]]
@@ -97,6 +166,9 @@ printHelp() {
 
   fablo chaincodes list <peer> <channel>
     Lists chaincodes installed on specified peer and channel.
+    
+  fablo chaincode query <channel_name> <chaincode_name> <peers_domains_comma_separated>  <command> <transient>
+    Queries chaincode with specified parameters.
 
   fablo channel --help
     To list available channel query options which can be executed on running network.
@@ -118,13 +190,30 @@ printHelp() {
 }
 
 executeOnFabloDocker() {
+
   local command_with_params="$1"
   local fablo_workspace="${2:-$FABLO_TEMP_DIR}"
   local fablo_config="$3"
 
+  # Docker requires volume paths to be at least 2 chars; resolve . to absolute path
+  if [ -d "$fablo_workspace" ]; then
+    fablo_workspace="$(cd "$fablo_workspace" && pwd)"
+  fi
+
   local fablo_workspace_params=(
     -v "$fablo_workspace":/network/workspace
   )
+
+  # Generate minimal passwd and group files to satisfy Node.js lookup
+  # Avoiding mounting host files directly for security reasons.
+  echo "$(id -un || echo fablo):x:$(id -u):$(id -g):$(id -un || echo fablo):/network/workspace:/bin/sh" >"$FABLO_TEMP_DIR/passwd"
+  echo "$(id -gn || echo fablo):x:$(id -g):" >"$FABLO_TEMP_DIR/group"
+
+  fablo_workspace_params+=(
+    -v "$FABLO_TEMP_DIR/passwd":/etc/passwd:ro
+    -v "$FABLO_TEMP_DIR/group":/etc/group:ro
+  )
+
 
   local fablo_config_params=()
   if [ -n "$fablo_config" ]; then
@@ -136,7 +225,7 @@ executeOnFabloDocker() {
     fablo_config="$(cd "$(dirname "$fablo_config")" && pwd)/$(basename "$fablo_config")"
     local chaincodes_base_dir="$(dirname "$fablo_config")"
     fablo_config_params=(
-      -v "$fablo_config":/network/fablo-config.json
+      -v "$fablo_config":/network/workspace/fablo-config.json
       --env "FABLO_CONFIG=$fablo_config"
       --env "CHAINCODES_BASE_DIR=$chaincodes_base_dir"
     )
@@ -146,7 +235,7 @@ executeOnFabloDocker() {
     "${fablo_workspace_params[@]}" \
     "${fablo_config_params[@]}" \
     -u "$(id -u):$(id -g)" \
-    $FABLO_IMAGE sh -c "/fablo/docker-entrypoint.sh \"$command_with_params\"" \
+    $FABLO_IMAGE sh -c "/fablo/docker-entrypoint.sh $command_with_params" \
     2>&1
 }
 
@@ -159,24 +248,31 @@ useVersion() {
     set +e
     curl -Lf https://github.com/hyperledger-labs/fablo/releases/download/"$version"/fablo.sh -o "$0" && chmod +x "$0"
   else
-    executeOnFabloDocker "fablo:list-versions"
+    executeOnFabloDocker "list-versions"
   fi
 }
 
 initConfig() {
   printSplash
-  executeOnFabloDocker "fablo:init $1 $2"
+  executeOnFabloDocker "init \"$1\" \"$2\" \"$3\" \"$4\" \"$5\""
   cp -R -i "$FABLO_TEMP_DIR/." "$COMMAND_CALL_ROOT/"
 }
 
 validateConfig() {
   local fablo_config=${1:-$(getDefaultFabloConfig)}
-  executeOnFabloDocker "fablo:validate" "" "$fablo_config"
+  executeOnFabloDocker "validate" "" "$fablo_config"
 }
 
 extendConfig() {
   local fablo_config=${1:-$(getDefaultFabloConfig)}
-  executeOnFabloDocker "fablo:extend-config" "" "$fablo_config"
+  executeOnFabloDocker "extend-config" "" "$fablo_config"
+}
+
+exportNetworkTopology() {
+  local fablo_config=${1:-$(getDefaultFabloConfig)}
+  local output_file=${2:-network-topology.mmd}
+
+  executeOnFabloDocker "export-network-topology /network/workspace/fablo-config.json $output_file" "$(dirname "$output_file")" "$fablo_config"
 }
 
 generateNetworkConfig() {
@@ -190,8 +286,12 @@ generateNetworkConfig() {
   echo "    FABLO_NETWORK_ROOT: $fablo_target"
 
   mkdir -p "$fablo_target"
-  executeOnFabloDocker "fablo:setup-network" "$fablo_target" "$fablo_config"
-  ("$fablo_target/hooks/post-generate.sh")
+  executeOnFabloDocker "setup-network" "$fablo_target" "$fablo_config"
+  if [ -f "$fablo_target/hooks/post-generate.sh" ]; then
+    chmod +x "$fablo_target/hooks/post-generate.sh" || true
+    ("$fablo_target/hooks/post-generate.sh")
+  fi
+  snapshotFabloConfigToTarget "$fablo_config" "$fablo_target"
 }
 
 networkPrune() {
@@ -208,9 +308,12 @@ networkPrune() {
 }
 
 networkUp() {
+  local fablo_config=${1:-$(getDefaultFabloConfig)}
   if [ ! -d "$FABLO_TARGET" ] || [ -z "$(ls -A "$FABLO_TARGET")" ]; then
     echo "Network target directory is empty"
-    generateNetworkConfig "$1"
+    generateNetworkConfig "$fablo_config"
+  else
+    verifyConfigMatchesOrFail "$fablo_config"
   fi
   executeFabloCommand up
 }
@@ -223,6 +326,7 @@ executeFabloCommand() {
 
   if [ -f "$FABLO_TARGET/fabric-docker.sh" ]; then
     echo "Executing Fablo Docker command: $1"
+    chmod +x "$FABLO_TARGET/fabric-docker.sh" || true
     "$FABLO_TARGET/fabric-docker.sh" "$1" "$2" "$3" "$4" "$5" "$6" "$7" "$8"
   elif [ -f "$FABLO_TARGET/fabric-k8s.sh" ]; then
     echo "Executing Fablo Kubernetes command: $1"
@@ -231,6 +335,14 @@ executeFabloCommand() {
     echo "Error: Corrupted Fablo target directory ($FABLO_TARGET)"
     echo "Cannot execute command $1"
     exit 1
+  fi
+
+  # Execute post-start hook after network is started
+  if [ "$1" = "up" ] || [ "$1" = "start" ]; then
+    if [ -f "$FABLO_TARGET/hooks/post-start.sh" ]; then
+      chmod +x "$FABLO_TARGET/hooks/post-start.sh" || true
+      ("$FABLO_TARGET/hooks/post-start.sh")
+    fi
   fi
 }
 
@@ -272,7 +384,7 @@ elif [ "$COMMAND" = "help" ] || [ "$COMMAND" = "--help" ]; then
   printHelp
 
 elif [ "$COMMAND" = "version" ]; then
-  executeOnFabloDocker "fablo:version $2"
+  executeOnFabloDocker "version $2"
 
 elif [ "$COMMAND" = "use" ]; then
   useVersion "$2"
@@ -285,6 +397,9 @@ elif [ "$COMMAND" = "validate" ]; then
 
 elif [ "$COMMAND" = "extend-config" ]; then
   extendConfig "$2"
+
+elif [ "$COMMAND" = "export-network-topology" ]; then
+  exportNetworkTopology "$2" "$3"
 
 elif [ "$COMMAND" = "generate" ]; then
   generateNetworkConfig "$2" "$3"

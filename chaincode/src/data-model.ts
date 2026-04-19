@@ -1,4 +1,4 @@
-import { Context, Contract, Default, Info, Returns, Transaction, Property, Object } from 'fabric-contract-api'
+import { Property, Object } from 'fabric-contract-api'
 
 @Object()
 export class Player {

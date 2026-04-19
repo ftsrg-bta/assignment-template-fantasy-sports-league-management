@@ -1,6 +1,6 @@
-import { Context, Contract, Default, Info, Transaction } from 'fabric-contract-api'
-import { MatchResult, Player, SetupDto, Team, VariablesDto, Stats, EndResultDto, ScoreMapping, PlayerStats, TeamPoints, ObjectTypes, Phase, ValueKeys } from './data-model'
-import { IFantasyLeague } from './fantasy-league.contract-interface'
+import { Context, Contract, Default, Info } from 'fabric-contract-api'
+import { MatchResult, Player, SetupDto, Team, EndResultDto, VariablesDto } from './data-model.js'
+import { IFantasyLeague } from './fantasy-league.contract-interface.js'
 
 
 @Info({ title: 'FantasyLeague', description: 'Smart contract for playing fantasy leagues' })
@@ -9,7 +9,7 @@ export class FantasyLeagueContract extends Contract implements IFantasyLeague {
     ClearState(ctx: Context): Promise<void> {
         throw new Error('Method not implemented.')
     }
-    Initalize(ctx: Context, dto: SetupDto): Promise<void> {
+    Initialize(ctx: Context, dto: SetupDto): Promise<void> {
         throw new Error('Method not implemented.')
     }
     StartDraft(ctx: Context): Promise<void> {
@@ -21,7 +21,7 @@ export class FantasyLeagueContract extends Contract implements IFantasyLeague {
     EndSeason(ctx: Context): Promise<void> {
         throw new Error('Method not implemented.')
     }
-    GetGameVariables(ctx: Context): Promise<any> {
+    GetGameVariables(ctx: Context): Promise<VariablesDto> {
         throw new Error('Method not implemented.')
     }
     AddPlayer(ctx: Context, player: Player): Promise<void> {
@@ -51,10 +51,10 @@ export class FantasyLeagueContract extends Contract implements IFantasyLeague {
     GetAllMatchResults(ctx: Context): Promise<MatchResult[]> {
         throw new Error('Method not implemented.')
     }
-    getPointsForTeam(ctx: Context, teamName: string): Promise<number> {
+    GetPointsForTeam(ctx: Context, teamName: string): Promise<number> {
         throw new Error('Method not implemented.')
     }
-    getResults(ctx: Context): Promise<EndResultDto> {
+    GetResults(ctx: Context): Promise<EndResultDto> {
         throw new Error('Method not implemented.')
     }
 
