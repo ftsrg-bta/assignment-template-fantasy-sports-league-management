@@ -4,9 +4,9 @@ name: Chaincode Build
 
 on:
   push:
-    paths: [chaincode/**]
+    paths: [chaincode/**, .github/workflows/chaincode-build.yml]
   pull_request:
-    paths: [chaincode/**]
+    paths: [chaincode/**, .github/workflows/chaincode-build.yml]
 
 
 permissions:
@@ -14,8 +14,28 @@ permissions:
 
 
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: chaincode/
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: chaincode/.nvmrc
+          cache: npm
+          cache-dependency-path: chaincode/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+      - name: Lint
+        run: npm run lint
+
+
   build:
     runs-on: ubuntu-latest
+    needs: lint
     defaults:
       run:
         working-directory: chaincode/
