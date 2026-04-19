@@ -36,6 +36,8 @@ export class SetupDto{
     public initialPlayers: Player[]
     @Property('scoreMapping', 'ScoreMapping')
     public scoreMapping: ScoreMapping
+    @Property('captainMultiplier', 'number')
+    public captainMultiplier: number
 }
 
 @Object()
@@ -50,6 +52,8 @@ export class VariablesDto {
     public phase: string
     @Property('scoreMapping', 'ScoreMapping')
     public scoreMapping: ScoreMapping
+    @Property('captainMultiplier', 'number')
+    public captainMultiplier: number
 }
 
 @Object()
@@ -60,6 +64,8 @@ export class Team {
     public players: Player[]
     @Property('bet', 'number')
     public bet: number
+    @Property('captainPlayerId', 'string')
+    public captainPlayerId: string
 }
 
 @Object()
@@ -126,7 +132,8 @@ export enum ValueKeys {
     maxBet = 'maxBet',
     teamSize = 'teamSize',
     phase = 'phase',
-    scoreMapping = 'scoreMapping'
+    scoreMapping = 'scoreMapping',
+    captainMultiplier = 'captainMultiplier'
 }
 export enum Phase {
     Setup = 'Setup',
